@@ -10,18 +10,30 @@ RELAY_ZONE_0_MOTORBIKE = 27
 RELAY_ZONE_0_OTHER = 22
 
 # Setup GPIO mode and initialize relays
+# Setup GPIO mode and initialize relays
 GPIO.setmode(GPIO.BCM)
 GPIO.setup([RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER], GPIO.OUT, initial=GPIO.HIGH)
 
-def activate_relay(vehicle_type, relay_pins):
     # Default: Turn all relays OFF
-    GPIO.output(relay_pins, GPIO.HIGH)
+GPIO.output(RELAY_ZONE_0_CAR, GPIO.HIGH)
+GPIO.output(RELAY_ZONE_0_MOTORBIKE, GPIO.HIGH)
+GPIO.output(RELAY_ZONE_0_OTHER, GPIO.LOW)
 
-    # Activate the correct relay
-    relay_map = {"car": 0, "motorbike": 1, "other": 2}
-    if vehicle_type in relay_map:
-        GPIO.output(relay_pins[relay_map[vehicle_type]], GPIO.LOW)
-
+def activate_relay(vehicle_type):
+    print(vehicle_type)
+    
+    if vehicle_type == "car":
+        GPIO.output(RELAY_ZONE_0_CAR, GPIO.LOW)
+        GPIO.output(RELAY_ZONE_0_MOTORBIKE, GPIO.HIGH)
+        GPIO.output(RELAY_ZONE_0_OTHER, GPIO.HIGH)
+    elif vehicle_type == "motorbike":
+        GPIO.output(RELAY_ZONE_0_CAR, GPIO.HIGH)
+        GPIO.output(RELAY_ZONE_0_MOTORBIKE, GPIO.LOW)
+        GPIO.output(RELAY_ZONE_0_OTHER, GPIO.HIGH)
+    elif vehicle_type == "none":
+        GPIO.output(RELAY_ZONE_0_CAR, GPIO.HIGH)
+        GPIO.output(RELAY_ZONE_0_MOTORBIKE, GPIO.HIGH)
+        GPIO.output(RELAY_ZONE_0_OTHER, GPIO.LOW)
 
 def main(weight_file_path: str,
          class_list_file_path: str,
@@ -81,12 +93,10 @@ def main(weight_file_path: str,
         curr_vehic_zone = hanlde_current_vehic["vehicle"]
 
         if curr_vehic_zone != prev_vehic_zone:
-            activate_relay(curr_vehic_zone, [RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER])
+            activate_relay(curr_vehic_zone)
             prev_vehic_zone = curr_vehic_zone
 
         data_to_display = {
-            "number_of_zones": number_of_zones,
-            "zones_list": collected_vehicle,
             "frame_name": frame_name,
             "hanlde_current_vehic": hanlde_current_vehic,
             "processing_time": (time.time() * 1000) - start_time

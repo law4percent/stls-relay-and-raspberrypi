@@ -103,32 +103,38 @@ def display_zone_info(frame, data, color=(255, 255, 255), font = cv2.FONT_HERSHE
         return
     
     # number_of_zones = data["number_of_zones"]
-    current_vehic = data["hanlde_current_vehic"]
-    zones_list = data["zones_list"]
+    hanlde_current_vehic = data["hanlde_current_vehic"]
+    
     processing_time = data["processing_time"]
     frame_width = frame.shape[1]
     overlay = frame.copy()
     
+    curr_t = hanlde_current_vehic["current_time"]
+    curr_v = hanlde_current_vehic["vehicle"]
     
-    vehic = current_vehic["vehicle"]
-    curr_time = current_vehic["current_time"]
-    text = f"Zone: 0 | NV: {len(zones_list)} | PV: {vehic} [{curr_time}]"
-    position = (25, 25 + 30 * 0)
-    (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
-    cv2.rectangle(overlay, (position[0] - 5, position[1] - text_h - 5), (position[0] + text_w + 5, position[1] + 5), bg_color, cv2.FILLED)
-
+    text1 = f"Zone: 0 | PV: {curr_v} [{curr_t}]"
+    position1 = (25, 25 + 30 * 0)
+    (text1_w, text1_h), _ = cv2.getTextSize(text1, font, font_scale, thickness)
+    
     text = f"Process Time per frame: {processing_time:.2f} ms"
     if (frame_width > 1000):
         position = (frame_width - 550, 30)
     else:
         position = (25, 25 + 30 * 2)
+    
     (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
     cv2.rectangle(overlay, (position[0] - 5, position[1] - text_h - 5), (position[0] + text_w + 5, position[1] + 5), bg_color, cv2.FILLED)
+    cv2.rectangle(overlay, (position1[0] - 5, position1[1] - text1_h - 5), (position1[0] + text1_w + 5, position1[1] + 5), bg_color, cv2.FILLED)
+    
     cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
-
+    
+    cv2.putText(frame, text1, position1, font, font_scale, color, thickness)
+    cv2.putText(frame, text1, position1, font, font_scale, color, 2, cv2.LINE_AA)
     cv2.putText(frame, text, position, font, font_scale, color, thickness)
-    cv2.putText(frame, text, position, font, font_scale, color, 2, cv2.LINE_AA)
+    cv2.putText(frame, text, position, font, font_scale, color, 2, cv2.LINE_AA)    
 
+
+    
 
 def check_camera(cap):
     if not cap.isOpened():
@@ -148,12 +154,12 @@ def track_objects_in_zones(frame, boxes, class_list, zones, collected_vehicle, f
         cls_center_pnt = (cls_center_x, cls_center_y)
         cls_name = class_list[int(cls)]
         for zone_indx, zone in enumerate(zones.values()):
-            if cv2.pointPolygonTest(np.array(zone, dtype=np.int32), cls_center_pnt, False) == 1:
+            if cv2.pointPolygonTest(np.array(zone, dtype=np.int32), cls_center_pnt, False) == 1 and is_valid_vehicle(cls_name):
+                collected_vehicle[zone_indx].append(cls_name)
                 show_object_info(frame, x1, y1, x2, y2, cls, conf_score, class_list, cls_center_pnt, frame_name)
-                if is_valid_vehicle(cls_name):
-                    collected_vehicle[zone_indx].append(cls_name)
-                break
-    return collected_vehicle
+    
+    first_index = collected_vehicle[0] if len(collected_vehicle) > 0 else 'none'
+    return first_index
 
 def show_object_info(frame, x1, y1, x2, y2, cls, conf_score, class_list, cls_center_pnt, frame_name):
     if frame_name.lower() == "off":
