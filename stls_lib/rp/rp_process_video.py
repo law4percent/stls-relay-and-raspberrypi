@@ -85,8 +85,8 @@ def main(weight_file_path: str,
             stls.traffic_light_display(frame, indx, is_zone_occupied = len(collected_vehicle[indx]) > 0) # Optional visualization
             
         # Get the current vehicle types for each zone, or 'none' if invalid
-        curr_vehic_zone0 = queuing_data[0]["vehicle"] if stls.is_valid_vehicle(queuing_data[0]["vehicle"]) else 'none'
-        curr_vehic_zone1 = queuing_data[1]["vehicle"] if stls.is_valid_vehicle(queuing_data[1]["vehicle"]) else 'none'
+        curr_vehic_zone0 = queuing_data[0]["vehicle"]
+        curr_vehic_zone1 = queuing_data[1]["vehicle"]
 
         if curr_vehic_zone0 != prev_vehic_zone0 or curr_vehic_zone1 != prev_vehic_zone1:
             activate_relay(curr_vehic_zone0, [RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER])

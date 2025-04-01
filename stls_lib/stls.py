@@ -140,6 +140,9 @@ def check_camera(cap):
         raise TypeError("Cannot open camera.")
 
 
+def is_valid_vehicle(vehicle):
+    return vehicle == "car" or vehicle == "motorbike"
+
 def track_objects_in_zones(frame, boxes, class_list, zones, collected_vehicle, frame_name):
     for idx, box in enumerate(boxes):
         x1, y1, x2, y2, conf_score, cls = box
@@ -148,10 +151,12 @@ def track_objects_in_zones(frame, boxes, class_list, zones, collected_vehicle, f
         cls_center_x = int(x1 + x2) // 2
         cls_center_y = int(y1 + y2) // 2
         cls_center_pnt = (cls_center_x, cls_center_y)
+        cls_name = class_list[int(cls)]
         for zone_indx, zone in enumerate(zones.values()):
             if cv2.pointPolygonTest(np.array(zone, dtype=np.int32), cls_center_pnt, False) == 1:
                 show_object_info(frame, x1, y1, x2, y2, cls, conf_score, class_list, cls_center_pnt, frame_name)
-                collected_vehicle[zone_indx].append(class_list[int(cls)])
+                if is_valid_vehicle(cls_name):
+                    collected_vehicle[zone_indx].append(cls_name)
                 break
     return collected_vehicle
 
@@ -305,6 +310,3 @@ def traffic_light_display(frame, zone_index, is_zone_occupied, rect_color=(100, 
     # Draw the circles
     cv2.circle(frame, (rect_center_x, upper_y), radius, upper_circle_color, -1)
     cv2.circle(frame, (rect_center_x, lower_y), radius, lower_circle_color, -1)
-
-def is_valid_vehicle(vehicle):
-    return vehicle == "car" or vehicle == "motorbike"
