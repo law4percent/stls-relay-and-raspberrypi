@@ -1,0 +1,17 @@
+write_points_mode: False
+max_zones: 2
+detect_sensitivity: 0.15
+frame_name: Smart Traffic System
+frame_height: 800 
+frame_width: 1280
+time_interval: 3.0
+
+video_source: src/inference/videos/video.mp4
+
+weight_file_path: src/YOLO11_training/train_result/weights/best.pt
+class_list_file_path: src/utils/class.names
+zones_file_path: src/utils/zones.txt
+wait_key: 1
+ord_key: q
+
+gb: None
