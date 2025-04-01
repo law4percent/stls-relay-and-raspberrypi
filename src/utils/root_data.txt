@@ -1,5 +1,5 @@
 write_points_mode: False
-max_zones: 2
+max_zones: 1
 detect_sensitivity: 0.15
 frame_name: Smart Traffic System
 frame_height: 800 

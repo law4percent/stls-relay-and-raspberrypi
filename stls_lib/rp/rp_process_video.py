@@ -8,14 +8,10 @@ import RPi.GPIO as GPIO
 RELAY_ZONE_0_CAR = 17
 RELAY_ZONE_0_MOTORBIKE = 27
 RELAY_ZONE_0_OTHER = 22
-RELAY_ZONE_1_CAR = 5
-RELAY_ZONE_1_MOTORBIKE = 6
-RELAY_ZONE_1_OTHER = 13
 
 # Setup GPIO mode and initialize relays
 GPIO.setmode(GPIO.BCM)
-GPIO.setup([RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER, 
-            RELAY_ZONE_1_CAR, RELAY_ZONE_1_MOTORBIKE, RELAY_ZONE_1_OTHER], GPIO.OUT, initial=GPIO.HIGH)
+GPIO.setup([RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER], GPIO.OUT, initial=GPIO.HIGH)
 
 def activate_relay(vehicle_type, relay_pins):
     # Default: Turn all relays OFF
@@ -60,9 +56,8 @@ def main(weight_file_path: str,
     # Initialize zones and tracking data
     count = 0
     success = True
-    zones_data = [{"countdown_start_time": 0.0, "refresh": False, "get_vehicle": 'none'} for _ in range(number_of_zones)]
-    prev_vehic_zone0 = 'none'
-    prev_vehic_zone1 = 'none'
+    zones_data = {"countdown_start_time": 0.0, "refresh": False, "get_vehicle": 'none'}
+    prev_vehic_zone = 'none'
 
     while success:
         start_time = time.time() * 1000
@@ -79,26 +74,21 @@ def main(weight_file_path: str,
         stls.draw_polylines_zones(frame, zones, frame_name)  # Optional visualization
         collected_vehicle = stls.track_objects_in_zones(frame, boxes, class_list, zones, collected_vehicle, frame_name)
 
-        queuing_data = []
-        for indx in range(number_of_zones):
-            queuing_data.append(stls.handle_zone_queuing(indx, collected_vehicle, curr_time, zones_data, time_interval))
-            stls.traffic_light_display(frame, indx, is_zone_occupied = len(collected_vehicle[indx]) > 0) # Optional visualization
+        hanlde_current_vehic = stls.handle_zone_queuing(collected_vehicle, curr_time, zones_data, time_interval)
+        stls.traffic_light_display(frame, is_zone_occupied = len(collected_vehicle) > 0) # Optional visualization
             
         # Get the current vehicle types for each zone, or 'none' if invalid
-        curr_vehic_zone0 = queuing_data[0]["vehicle"]
-        curr_vehic_zone1 = queuing_data[1]["vehicle"]
+        curr_vehic_zone = hanlde_current_vehic["vehicle"]
 
-        if curr_vehic_zone0 != prev_vehic_zone0 or curr_vehic_zone1 != prev_vehic_zone1:
-            activate_relay(curr_vehic_zone0, [RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER])
-            activate_relay(curr_vehic_zone1, [RELAY_ZONE_1_CAR, RELAY_ZONE_1_MOTORBIKE, RELAY_ZONE_1_OTHER])
-            prev_vehic_zone0 = curr_vehic_zone0
-            prev_vehic_zone1 = curr_vehic_zone1
+        if curr_vehic_zone != prev_vehic_zone:
+            activate_relay(curr_vehic_zone, [RELAY_ZONE_0_CAR, RELAY_ZONE_0_MOTORBIKE, RELAY_ZONE_0_OTHER])
+            prev_vehic_zone = curr_vehic_zone
 
         data_to_display = {
             "number_of_zones": number_of_zones,
             "zones_list": collected_vehicle,
             "frame_name": frame_name,
-            "queuing_data": queuing_data,
+            "hanlde_current_vehic": hanlde_current_vehic,
             "processing_time": (time.time() * 1000) - start_time
         }
         stls.display_zone_info(frame, data_to_display)  # Optional visualization       

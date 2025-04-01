@@ -102,24 +102,20 @@ def display_zone_info(frame, data, color=(255, 255, 255), font = cv2.FONT_HERSHE
     if frame_name.lower() == "off":
         return
     
-    number_of_zones = data["number_of_zones"]
-    queuing_data = data["queuing_data"]
+    # number_of_zones = data["number_of_zones"]
+    current_vehic = data["hanlde_current_vehic"]
     zones_list = data["zones_list"]
     processing_time = data["processing_time"]
     frame_width = frame.shape[1]
     overlay = frame.copy()
     
-    collected_text = []
-    collected_position = []
-    for zone_indx in range(number_of_zones):
-        vehic = queuing_data[zone_indx]["vehicle"]
-        curr_time = queuing_data[zone_indx]["current_time"]
-        text = f"Zone: {zone_indx} | NV: {len(zones_list[zone_indx])} | PV: {vehic} [{curr_time}]"
-        collected_text.append(text)
-        position = (25, 25 + 30 * zone_indx)
-        collected_position.append(position)
-        (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
-        cv2.rectangle(overlay, (position[0] - 5, position[1] - text_h - 5), (position[0] + text_w + 5, position[1] + 5), bg_color, cv2.FILLED)
+    
+    vehic = current_vehic["vehicle"]
+    curr_time = current_vehic["current_time"]
+    text = f"Zone: 0 | NV: {len(zones_list)} | PV: {vehic} [{curr_time}]"
+    position = (25, 25 + 30 * 0)
+    (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+    cv2.rectangle(overlay, (position[0] - 5, position[1] - text_h - 5), (position[0] + text_w + 5, position[1] + 5), bg_color, cv2.FILLED)
 
     text = f"Process Time per frame: {processing_time:.2f} ms"
     if (frame_width > 1000):
@@ -130,8 +126,7 @@ def display_zone_info(frame, data, color=(255, 255, 255), font = cv2.FONT_HERSHE
     cv2.rectangle(overlay, (position[0] - 5, position[1] - text_h - 5), (position[0] + text_w + 5, position[1] + 5), bg_color, cv2.FILLED)
     cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
-    cv2.putText(frame, collected_text[0], collected_position[0], font, font_scale, color, thickness)
-    cv2.putText(frame, collected_text[1], collected_position[1], font, font_scale, color, thickness)
+    cv2.putText(frame, text, position, font, font_scale, color, thickness)
     cv2.putText(frame, text, position, font, font_scale, color, 2, cv2.LINE_AA)
 
 
@@ -243,24 +238,24 @@ def extract_root_data(file_path: str):
     return get_data
     
 
-def handle_zone_queuing(zone_index, collected_vehicle, current_time, zones_data, interval):
-    zone = zones_data[zone_index]
+def handle_zone_queuing(collected_vehicle, current_time, zones_data, interval):
+    zone = zones_data
 
     # Start the countdown if it's not already refreshing and the zone has vehicles
-    if not zone["refresh"] and len(collected_vehicle[zone_index]) > 0:
+    if not zone["refresh"] and len(collected_vehicle) > 0:
         zone["refresh"] = True
         zone["countdown_start_time"] = current_time
-        zone["get_vehicle"] = collected_vehicle[zone_index][0]
+        zone["get_vehicle"] = collected_vehicle[0]
 
     # Check if the countdown is active and has elapsed
     if zone["refresh"] and zone["countdown_start_time"] != 0.0:
         elapsed_time = current_time - zone["countdown_start_time"]
         if elapsed_time >= interval:
             # Countdown is complete
-            print(f"Countdown complete for Zone {zone_index}!")
+            print(f"Countdown complete for Zone!")
             zone["refresh"] = False
             zone["countdown_start_time"] = 0.0
-            zone["get_vehicle"] = collected_vehicle[zone_index][0] if len(collected_vehicle[zone_index]) > 1 else 'none'
+            zone["get_vehicle"] = collected_vehicle[0] if len(collected_vehicle) > 1 else 'none'
 
     # Calculate the current time remaining in the countdown
     remaining_time = 0.0
@@ -268,22 +263,18 @@ def handle_zone_queuing(zone_index, collected_vehicle, current_time, zones_data,
         remaining_time = round(current_time - zone['countdown_start_time'], 2)
 
     return {
-        "zone_index": zone_index,
         "vehicle": zone["get_vehicle"],
         "current_time": f'{remaining_time:.2f}'
     }
 
-def traffic_light_display(frame, zone_index, is_zone_occupied, rect_color=(100, 100, 100), thickness=4, radius=15):
+def traffic_light_display(frame, is_zone_occupied, rect_color=(100, 100, 100), thickness=4, radius=15):
     # Get the frame dimensions
     frame_width = frame.shape[1]
     frame_height = frame.shape[0]
 
-    if zone_index == 0:
-        top_left = (int(0.05 * frame_width), int(frame_height - 150))
-        bottom_right = (top_left[0] + 50, top_left[1] + 100)
-    else:
-        top_left = (int(frame_width - 100), int(frame_height - 150))
-        bottom_right = (top_left[0] + 50, top_left[1] + 100)
+    top_left = (int(0.05 * frame_width), int(frame_height - 150))
+    bottom_right = (top_left[0] + 50, top_left[1] + 100)
+    
 
 
     # Calculate center of the rectangle and y positions for circles
@@ -295,7 +286,7 @@ def traffic_light_display(frame, zone_index, is_zone_occupied, rect_color=(100, 
     mask_color = (0, 0, 0)
 
     # Draw rectangle and mask
-    cv2.putText(frame, f"Zone: {zone_index}", (top_left[0], top_left[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
+    cv2.putText(frame, f"Zone", (top_left[0], top_left[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
     cv2.rectangle(frame, top_left, bottom_right, rect_color, thickness)
     cv2.rectangle(frame, top_left, bottom_right, mask_color, -1)
 
